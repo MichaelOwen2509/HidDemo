@@ -1,78 +1,103 @@
 #include <iostream>
+#include <string>
 #include <unistd.h>
 #include <cstdio>
 #include <termios.h>
 #include "CFHidApi.h"
 
-#define FALSE 0
-#define TRUE 1
-
 using namespace std;
 
-int main() {
-    cout << "\n--- Leitor Completo: TID e Conteudo Gravado ---" << endl;
-    
-    if (CFHid_OpenDevice() == FALSE) {
-        cout << "\n[ERRO] Leitor nao encontrado. Lembre-se de rodar o comando de permissao USB!" << endl;
-        return 1;
+// =====================================================================
+// FUNÇÕES AUXILIARES
+// =====================================================================
+
+bool prepararLeitor() {
+    if (CFHid_OpenDevice() == 0) {
+        cout << "\n[ERRO] Leitor nao encontrado. (sudo chmod 666 /dev/bus/usb/*/*)" << endl;
+        return false;
     }
 
-    // 1. Muta o leitor para ele não agir como teclado e atrapalhar o terminal
-    CFHid_StopRead(0xFF);
-    usleep(200000); 
-    tcflush(STDIN_FILENO, TCIFLUSH); 
+    CFHid_StopRead(0xFF);            // Trava o sensor imediatamente
+    usleep(200000);                  
+    tcflush(STDIN_FILENO, TCIFLUSH); // Limpa o terminal de qualquer lixo
+    return true;
+}
 
-    cout << "\n>>> Aproxime a etiqueta para o raio-X completo..." << endl;
-
+// Função de leitura com limite de tempo (para não travar para sempre se não tiver tag)
+void lerMemoriaDaTag(unsigned char banco, unsigned char endereco, unsigned char* bufferSaida) {
     unsigned char Password[4] = {0,0,0,0};
-    
-    // Variáveis para o TID (Fábrica)
-    unsigned char TIDData[12] = {0};
-    bool tidLido = false;
+    unsigned char tamanhoDaLeitura = 6; 
+    bool lido = false;
+    int tentativas = 0;
 
-    // Variáveis para o EPC (Conteúdo Gravado)
-    unsigned char EPCData[12] = {0};
-    bool epcLido = false;
-
-    // 2. Lê a Identidade de Fábrica (Banco 2, Endereço 0)
-    while (!tidLido) {
-        if (CFHid_ReadCardG2(0xFF, Password, 2, 0, 6, TIDData) == TRUE) {
-            tidLido = true;
+    // Tenta ler por no máximo 2 segundos (20 tentativas de 100ms)
+    while (!lido && tentativas < 20) {
+        if (CFHid_ReadCardG2(0xFF, Password, banco, endereco, tamanhoDaLeitura, bufferSaida) == 1) {
+            lido = true;
         } else {
-            usleep(100000); // Espera 100ms e tenta de novo
+            usleep(100000); 
+            tentativas++;
         }
     }
-
-    // 3. Lê o Conteúdo Gravado (Banco 1, Endereço 2 - pula blocos de controle)
-    // Como a tag já está no leitor (o TID acabou de ser lido), ele deve ler isso de primeira.
-    while (!epcLido) {
-        if (CFHid_ReadCardG2(0xFF, Password, 1, 2, 6, EPCData) == TRUE) {
-            epcLido = true;
-        } else {
-            usleep(100000);
-        }
-    }
-
-    // 4. Imprime os dois resultados de forma limpa na tela
-    cout << "\n========================================" << endl;
     
-    cout << "TID (Identidade de Fabrica) : ";
+    if (!lido) {
+        cout << " [!] Nao foi possivel ler o banco " << (int)banco << ". Tag fora de alcance?" << endl;
+    }
+}
+
+void imprimirResultado(const string& rotulo, unsigned char* dados) {
+    cout << rotulo;
     for (int i = 0; i < 12; i++) {
-        printf("%02X", TIDData[i]);
+        printf("%02X", dados[i]);
     }
     cout << endl;
-    
-    cout << "EPC (Conteudo Gravado)      : ";
-    for (int i = 0; i < 12; i++) {
-        printf("%02X", EPCData[i]);
-    }
-    
-    cout << "\n========================================" << endl;
+}
 
-    // 5. O truque de mestre: Devolve o leitor ao modo teclado automático!
-    // Assim, você não precisa desconectar o cabo depois de rodar o programa.
-    CFHid_StartRead(0xFF);
+// =====================================================================
+// CORPO PRINCIPAL DO PROGRAMA
+// =====================================================================
+
+int main() {
+    cout << "\n--- Leitor sob Controle Manual Absoluto ---" << endl;
     
-    CFHid_CloseDevice();
+    // 1. Inicia e trava o sensor
+    if (!prepararLeitor()) return 1; 
+
+    // 2. Aguarda a sua autorização (ENTER)
+    cout << "\n1) Posicione a etiqueta no leitor." << endl;
+    cout << "2) Pressione [ENTER] para fazer a leitura..." << endl;
+    
+    string dummy;
+    getline(cin, dummy); // Segura o programa até o Enter ser apertado
+
+    cout << "\nLendo dados..." << endl;
+    unsigned char TIDData[12] = {0};
+    unsigned char EPCData[12] = {0};
+
+    // 3. Executa a leitura
+    lerMemoriaDaTag(2, 0, TIDData); // Lê a Identidade de Fábrica
+    lerMemoriaDaTag(1, 2, EPCData); // Lê o Conteúdo Gravado
+
+    // 4. Trava o sensor novamente por garantia
+    CFHid_StopRead(0xFF);
+    usleep(100000);
+
+    // 5. Mostra os dados de forma limpa
+    cout << "\n==================================================" << endl;
+    imprimirResultado("TID (Identidade de Fabrica) : ", TIDData);
+    imprimirResultado("EPC (Conteudo Gravado)      : ", EPCData);
+    cout << "==================================================" << endl;
+
+    // 6. Passo final de segurança para não quebrar o terminal
+    cout << "\n>>> ATENCAO: Retire a etiqueta do leitor AGORA." << endl;
+    cout << ">>> Apos retirar, pressione [ENTER] para encerrar." << endl;
+    getline(cin, dummy); // Segura o programa até o último Enter
+
+    // Limpa o terminal, devolve o leitor ao modo de teclado e fecha
+    tcflush(STDIN_FILENO, TCIFLUSH); 
+    CFHid_StartRead(0xFF);           
+    CFHid_CloseDevice();             
+    
     return 0;
 }
+
