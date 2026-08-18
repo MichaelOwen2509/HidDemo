@@ -95,7 +95,7 @@ int main() {
 
     // Limpa o terminal, devolve o leitor ao modo de teclado e fecha
     tcflush(STDIN_FILENO, TCIFLUSH); 
-    CFHid_StartRead(0xFF);           
+    //CFHid_StartRead(0xFF);           
     CFHid_CloseDevice();             
     
     return 0;
