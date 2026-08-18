@@ -5,7 +5,8 @@
 #include <termios.h>
 #include <limits>
 #include <cctype>
-#include "CFHidApi.h"
+#include "../CFHidApi.h"
+#include <cstdlib>
 
 using namespace std;
 
@@ -90,6 +91,7 @@ int main() {
 
     // Loop do Menu Principal
     while (opcao != 3) {
+
         cout << "\n---------------- MENU ----------------" << endl;
         cout << "1. Ler Etiqueta (Raio-X Completo)" << endl;
         cout << "2. Gravar Novo EPC" << endl;
@@ -115,9 +117,6 @@ int main() {
             // ---------------------------------------------------------
             case 1: {
                 cout << "\n[MODO DE LEITURA]" << endl;
-                cout << "Posicione a etiqueta no leitor e pressione [ENTER]...";
-                string dummy;
-                getline(cin, dummy);
                 tcflush(STDIN_FILENO, TCIFLUSH);
 
                 unsigned char TIDData[12] = {0};
@@ -127,13 +126,12 @@ int main() {
                 lerMemoriaDaTag(2, 0, TIDData);
                 lerMemoriaDaTag(1, 2, EPCData);
 
+                system("clear");
+
                 cout << "\n========================================" << endl;
                 imprimirResultado("TID (Fabrica) : ", TIDData);
                 imprimirResultado("EPC (Gravado) : ", EPCData);
                 cout << "========================================" << endl;
-
-                cout << "\nRetire a etiqueta e pressione [ENTER] para voltar ao menu...";
-                getline(cin, dummy);
                 break;
             }
 
@@ -174,6 +172,8 @@ int main() {
                 string confirma;
                 cin >> confirma;
 
+                system("clear");
+
                 if (confirma == "S" || confirma == "s") {
                     unsigned char Password[4] = {0,0,0,0};
                     if (CFHid_WriteCardG2(0xFF, Password, 1, 2, 6, Writedata) != 0) {
@@ -187,26 +187,15 @@ int main() {
                 break;
             }
 
-            // ---------------------------------------------------------
-            // OPÇÃO 3: ENCERRAR
-            // ---------------------------------------------------------
             case 3:
-                cout << "\nEncerrando o sistema. Ate logo!" << endl;
+                cout << "\nEncerrando sistema" << endl;
                 break;
 
-            // ---------------------------------------------------------
-            // VALIDAÇÃO DE OPÇÃO ERRADA
-            // ---------------------------------------------------------
             default:
                 cout << "[ERRO] Opcao invalida. Escolha 1, 2 ou 3." << endl;
                 break;
         }
     }
-
-    // Fecha a conexão limpa. 
-    // Como combinamos, o modo de leitura automática (StartRead) ficará comentado 
-    // para o leitor continuar como um "escravo perfeito" que não atrapalha o terminal.
-    // CFHid_StartRead(0xFF); 
     
     CFHid_CloseDevice();
     return 0;
