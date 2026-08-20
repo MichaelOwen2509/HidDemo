@@ -5,15 +5,21 @@
 #include <termios.h>
 #include <limits>
 #include <cctype>
-#include "../CFHidApi.h"
 #include <cstdlib>
+#include "../CFHidApi.h"
 
 using namespace std;
 
-// =====================================================================
-// FUNÇÕES AUXILIARES DE CONVERSÃO E VALIDAÇÃO
-// =====================================================================
+// CONSTANTES GLOBAIS
+const int TAMANHO_MAX_EPC = 24;
+const int TAMANHO_ARRAY_DADOS = 12;
+const int TAMANHO_BLOCO_LEITURA = 6;
+const int MAX_TENTATIVAS = 20;
 
+// Centraliza a senha. Caso seja implementada segurança futura, muda só aqui.
+unsigned char SENHA_TAG[4] = {0, 0, 0, 0}; 
+
+// FUNÇÕES AUXILIARES DE UX E VALIDAÇÃO
 bool hexStringToBytes(const string& hexRaw, unsigned char* bytes, size_t maxBytes) {
     if (hexRaw.length() % 2 != 0) return false;
     if (hexRaw.length() / 2 > maxBytes) return false;
@@ -35,16 +41,21 @@ bool hexStringToBytes(const string& hexRaw, unsigned char* bytes, size_t maxByte
 
 void imprimirResultado(const string& rotulo, unsigned char* dados) {
     cout << rotulo;
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < TAMANHO_ARRAY_DADOS; i++) {
         printf("%02X", dados[i]);
     }
     cout << endl;
 }
 
-// =====================================================================
-// FUNÇÕES DE COMUNICAÇÃO COM O HARDWARE
-// =====================================================================
+// Congela a tela para o usuário conseguir ler antes de o loop apagar tudo
+void pausarParaContinuar() {
+    cout << "\n[Pressione ENTER para continuar...]";
+    string dummy;
+    getline(cin, dummy);
+}
 
+
+// COMUNICAÇÃO COM O HARDWARE
 bool prepararLeitor() {
     if (CFHid_OpenDevice() == 0) {
         cout << "\n[ERRO] Leitor nao encontrado. (sudo chmod 666 /dev/bus/usb/*/*)" << endl;
@@ -57,14 +68,11 @@ bool prepararLeitor() {
 }
 
 void lerMemoriaDaTag(unsigned char banco, unsigned char endereco, unsigned char* bufferSaida) {
-    unsigned char Password[4] = {0,0,0,0};
-    unsigned char tamanho = 6; 
     bool lido = false;
     int tentativas = 0;
 
-    // Tenta ler por no máximo 2 segundos (20 * 100ms)
-    while (!lido && tentativas < 20) {
-        if (CFHid_ReadCardG2(0xFF, Password, banco, endereco, tamanho, bufferSaida) == 1) {
+    while (!lido && tentativas < MAX_TENTATIVAS) {
+        if (CFHid_ReadCardG2(0xFF, SENHA_TAG, banco, endereco, TAMANHO_BLOCO_LEITURA, bufferSaida) == 1) {
             lido = true;
         } else {
             usleep(100000); 
@@ -76,123 +84,120 @@ void lerMemoriaDaTag(unsigned char banco, unsigned char endereco, unsigned char*
     }
 }
 
-// =====================================================================
-// CORPO PRINCIPAL: MENU INTERATIVO
-// =====================================================================
+// OPERAÇÃO DO SISTEMA
+void executarLeitura() {
+    cout << "\n[MODO DE LEITURA]" << endl;
+    cout << "Fazendo a varredura da etiqueta..." << endl;
+    tcflush(STDIN_FILENO, TCIFLUSH);
+
+    unsigned char TIDData[TAMANHO_ARRAY_DADOS] = {0};
+    unsigned char EPCData[TAMANHO_ARRAY_DADOS] = {0};
+
+    lerMemoriaDaTag(2, 0, TIDData);
+    lerMemoriaDaTag(1, 2, EPCData);
+
+    system("clear");
+
+    cout << "\n========================================" << endl;
+    imprimirResultado("TID (Fabrica) : ", TIDData);
+    imprimirResultado("EPC (Gravado) : ", EPCData);
+    cout << "========================================" << endl;
+    
+    pausarParaContinuar();
+}
+
+void executarGravacao() {
+    cout << "\n[MODO DE GRAVACAO]" << endl;
+    string hexInput;
+    bool epcValido = false;
+    unsigned char Writedata[TAMANHO_ARRAY_DADOS] = {0};
+
+    while (!epcValido) {
+        cout << "Digite o EPC do livro (ate " << TAMANHO_MAX_EPC << " caracteres hexadecimais):" << endl;
+        cout << "> ";
+        cin >> hexInput;
+
+        if (hexInput.length() > TAMANHO_MAX_EPC) {
+            cout << "[ERRO] Maximo de " << TAMANHO_MAX_EPC << " caracteres excedido. Tente de novo.\n" << endl;
+            continue;
+        }
+        if (hexInput.length() < TAMANHO_MAX_EPC) {
+            hexInput = string(TAMANHO_MAX_EPC - hexInput.length(), '0') + hexInput;
+            cout << "[INFO] EPC ajustado para: " << hexInput << endl;
+        }
+        if (!hexStringToBytes(hexInput, Writedata, sizeof(Writedata))) {
+            cout << "[ERRO] Caracteres invalidos (use apenas 0-9 e A-F).\n" << endl;
+            continue;
+        }
+        epcValido = true;
+    }
+
+    // Limpa o buffer de digitação para garantir uma leitura limpa da confirmação
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    tcflush(STDIN_FILENO, TCIFLUSH);
+
+    cout << "\nPosicione a etiqueta no leitor e digite 'S' para gravar: ";
+    string confirma;
+    getline(cin, confirma); // Pega a linha toda, inclusive enter acidental
+
+    system("clear");
+
+    if (confirma == "S" || confirma == "s") {
+        if (CFHid_WriteCardG2(0xFF, SENHA_TAG, 1, 2, TAMANHO_BLOCO_LEITURA, Writedata) != 0) {
+            cout << "\n[SUCESSO] O codigo foi gravado na etiqueta com exito!" << endl;
+        } else {
+            cout << "\n[FALHA] Nao foi possivel gravar. A etiqueta estava posicionada corretamente?" << endl;
+        }
+    } else {
+        cout << "\n[CANCELADO] Operacao abortada. Nenhuma gravacao foi feita." << endl;
+    }
+    
+    pausarParaContinuar();
+}
+
 
 int main() {
-    cout << "\n=========================================" << endl;
-    cout << "      SISTEMA DE GERENCIAMENTO RFID      " << endl;
-    cout << "=========================================" << endl;
-
     if (!prepararLeitor()) return 1;
 
     int opcao = 0;
 
-    // Loop do Menu Principal
     while (opcao != 3) {
+        system("clear");
 
-        cout << "\n---------------- MENU ----------------" << endl;
-        cout << "1. Ler Etiqueta (Raio-X Completo)" << endl;
+        cout << "=========================================" << endl;
+        cout << "              SISTEMA RFID               " << endl;
+        cout << "=========================================" << endl;
+        cout << "1. Ler Etiqueta" << endl;
         cout << "2. Gravar Novo EPC" << endl;
         cout << "3. Encerrar Sistema" << endl;
-        cout << "--------------------------------------" << endl;
+        cout << "-----------------------------------------" << endl;
         cout << "Escolha uma opcao: ";
         
-        // Proteção caso digitem letras no menu
         if (!(cin >> opcao)) {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "[ERRO] Digite um numero valido!" << endl;
+            cout << "\n[ERRO] Digite um numero valido!" << endl;
+            pausarParaContinuar();
             continue;
         }
 
-        // Limpa o "Enter" que ficou no buffer do cin
+        // Limpa o Enter deixado pelo cin antes de chamar os módulos
         cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
 
         switch (opcao) {
-            
-            // ---------------------------------------------------------
-            // OPÇÃO 1: MODO DE LEITURA
-            // ---------------------------------------------------------
-            case 1: {
-                cout << "\n[MODO DE LEITURA]" << endl;
-                tcflush(STDIN_FILENO, TCIFLUSH);
-
-                unsigned char TIDData[12] = {0};
-                unsigned char EPCData[12] = {0};
-
-                cout << "Lendo..." << endl;
-                lerMemoriaDaTag(2, 0, TIDData);
-                lerMemoriaDaTag(1, 2, EPCData);
-
-                system("clear");
-
-                cout << "\n========================================" << endl;
-                imprimirResultado("TID (Fabrica) : ", TIDData);
-                imprimirResultado("EPC (Gravado) : ", EPCData);
-                cout << "========================================" << endl;
+            case 1:
+                executarLeitura();
                 break;
-            }
-
-            // ---------------------------------------------------------
-            // OPÇÃO 2: MODO DE GRAVAÇÃO
-            // ---------------------------------------------------------
-            case 2: {
-                cout << "\n[MODO DE GRAVACAO]" << endl;
-                string hexInput;
-                bool epcValido = false;
-                unsigned char Writedata[12] = {0};
-
-                while (!epcValido) {
-                    cout << "Digite o EPC do livro (ate 24 caracteres hexadecimais):" << endl;
-                    cout << "> ";
-                    cin >> hexInput;
-
-                    if (hexInput.length() > 24) {
-                        cout << "[ERRO] Maximo de 24 caracteres excedido. Tente de novo.\n" << endl;
-                        continue;
-                    }
-                    if (hexInput.length() < 24) {
-                        hexInput = string(24 - hexInput.length(), '0') + hexInput;
-                        cout << "[INFO] EPC ajustado para: " << hexInput << endl;
-                    }
-                    if (!hexStringToBytes(hexInput, Writedata, sizeof(Writedata))) {
-                        cout << "[ERRO] Caracteres invalidos (use apenas 0-9 e A-F).\n" << endl;
-                        continue;
-                    }
-                    epcValido = true;
-                }
-
-                // Limpa o buffer de novo
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                tcflush(STDIN_FILENO, TCIFLUSH);
-
-                cout << "\nPosicione a etiqueta no leitor e digite 'S' para gravar: ";
-                string confirma;
-                cin >> confirma;
-
-                system("clear");
-
-                if (confirma == "S" || confirma == "s") {
-                    unsigned char Password[4] = {0,0,0,0};
-                    if (CFHid_WriteCardG2(0xFF, Password, 1, 2, 6, Writedata) != 0) {
-                        cout << "[SUCESSO] O codigo foi gravado na etiqueta!" << endl;
-                    } else {
-                        cout << "[FALHA] Nao foi possivel gravar. A etiqueta estava posicionada corretamente?" << endl;
-                    }
-                } else {
-                    cout << "[CANCELADO] Voltando ao menu principal." << endl;
-                }
+            case 2:
+                executarGravacao();
                 break;
-            }
-
             case 3:
-                cout << "\nEncerrando sistema" << endl;
+                system("clear");
+                cout << "\nDesconectando do leitor...\n" << endl;
                 break;
-
             default:
-                cout << "[ERRO] Opcao invalida. Escolha 1, 2 ou 3." << endl;
+                cout << "\n[ERRO] Opcao invalida. Escolha 1, 2 ou 3." << endl;
+                pausarParaContinuar();
                 break;
         }
     }
