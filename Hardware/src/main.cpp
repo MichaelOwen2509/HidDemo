@@ -9,6 +9,8 @@
 
 using namespace std;
 
+//g++ main.cpp ../libCFHidApi.a -o rf_tool -I.. -lusb-1.0  
+
 const int TAMANHO_MAX_EPC = 24;
 const int TAMANHO_ARRAY_DADOS = 12;
 const int TAMANHO_BLOCO_LEITURA = 6;
