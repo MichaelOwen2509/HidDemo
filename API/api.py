@@ -17,8 +17,7 @@ app.add_middleware(
 DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
 CAMINHO_RF_TOOL = os.path.join(DIRETORIO_ATUAL, "..", "Hardware", "src", "rf_tool")
 
-# ROTAS TOTEM
-
+# ROTAS
 @app.get("/api/totem/ler")
 def ler_livro_totem():
     try:
@@ -27,7 +26,6 @@ def ler_livro_totem():
         
         texto_saida = resultado.stdout.strip()
         
-        # Pulo do Gato: Procura onde o JSON começa de verdade
         inicio_json = texto_saida.find('{')
         
         if inicio_json != -1:

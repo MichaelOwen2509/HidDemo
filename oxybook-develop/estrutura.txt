@@ -1,0 +1,85 @@
+michael@michael-pc-linux:~/Documents/Projetos/Faculdade/Estagio/OxyBook/oxybook-develop$ tree -a -I "node_modules|.git|.next|.swc"
+.
+├── AGENTS.md
+├── CLAUDE.md
+├── eslint.config.mjs
+├── .gitignore
+├── .husky
+│   ├── commit-msg
+│   └── pre-commit
+├── next.config.ts
+├── next-env.d.ts
+├── package.json
+├── package-lock.json
+├── pnpm-lock.yaml
+├── postcss.config.mjs
+├── public
+│   ├── icons
+│   │   ├── icon-insta.svg
+│   │   ├── icon-linkedin.svg
+│   │   ├── icon-wpp.svg
+│   │   ├── icon-x.svg
+│   │   └── logo-ceuma.svg
+│   ├── image
+│   │   ├── capa-livro.png
+│   │   ├── icons
+│   │   │   ├── logo-ceuma-branco.svg
+│   │   │   ├── logo-ceuma.svg
+│   │   │   ├── logo-oxygeni.svg
+│   │   │   └── vector.svg
+│   │   └── student-photo.png
+│   └── svg
+│       └── logo-ceuma.svg
+├── README.md
+├── src
+│   ├── app
+│   │   ├── (auth)
+│   │   │   └── login
+│   │   │       └── page.tsx
+│   │   ├── emprestimo-livro
+│   │   │   └── page.tsx
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   ├── page.test.tsx
+│   │   ├── page.tsx
+│   │   └── perfil
+│   │       └── page.tsx
+│   ├── presentation
+│   │   ├── modules
+│   │   │   ├── auth
+│   │   │   │   └── components
+│   │   │   │       └── login-page.tsx
+│   │   │   ├── books
+│   │   │   │   └── components
+│   │   │   │       └── rules-and-policies
+│   │   │   │           ├── index.ts
+│   │   │   │           ├── rule-item.tsx
+│   │   │   │           └── rules-and-polices.tsx
+│   │   │   └── perfil
+│   │   │       └── components
+│   │   │           ├── account-status.tsx
+│   │   │           ├── loan-alert.tsx
+│   │   │           ├── pending-fines.tsx
+│   │   │           ├── profile-aside.tsx
+│   │   │           └── user-profile-header.tsx
+│   │   └── shared
+│   │       ├── components
+│   │       │   ├── header
+│   │       │   │   ├── header.tsx
+│   │       │   │   └── index.ts
+│   │       │   ├── layout
+│   │       │   │   └── footer
+│   │       │   │       └── footer.tsx
+│   │       │   └── livros
+│   │       │       ├── BookCard.tsx
+│   │       │       └── SelectedBooksList.tsx
+│   │       ├── libs.test.ts
+│   │       ├── utils.test.ts
+│   │       └── utils.ts
+│   └── types
+│       └── book.ts
+├── tsconfig.json
+├── vitest.config.mts
+└── vitest.setup.ts
+
+29 directories, 53 files
