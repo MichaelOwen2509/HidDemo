@@ -7,12 +7,9 @@ import { Footer } from "@/presentation/shared/components/layout/footer/footer";
 import { SelectedBooksList } from "@/presentation/shared/components/livros/SelectedBooksList";
 import { Book } from "@/types/book";
 
-// ==========================================
-// BANCO DE DADOS FALSO PARA TESTES
-// ==========================================
 const mockBancoDeLivros: Record<string, string> = {
-  "000000000000009876543210": "O Senhor dos Anéis",
-  "000000000000000000000011": "Introdução ao Linux",
+  "B1B100000000009876543210": "O Senhor dos Anéis",
+  "B1B100000000000000000011": "Introdução ao Linux",
   "E280116020006094374909C1": "Fundamentos de Redes",
   "B1B100000000000000000000": "Dom Quixote",
   "ABC000000000000000000001": "Programação em C++"
@@ -22,9 +19,6 @@ export default function BookLoan() {
   const [livrosLidos, setLivrosLidos] = useState<Book[]>([]);
   const isScanning = useRef(false);
 
-  // ==========================================
-  // ESTADOS DO MODAL DE GRAVAÇÃO
-  // ==========================================
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [livroAtualIndex, setLivroAtualIndex] = useState(0);
   const [gravando, setGravando] = useState(false);
@@ -34,9 +28,6 @@ export default function BookLoan() {
     setLivrosLidos((prev) => prev.filter((book) => book.id !== id));
   };
 
-  // ==========================================
-  // LÓGICA DE LEITURA (RODA NO FUNDO)
-  // ==========================================
   useEffect(() => {
     const verificarSensor = async () => {
       // Se o modal de gravação estiver aberto, pausa a leitura automática
@@ -67,7 +58,7 @@ export default function BookLoan() {
           });
         }
       } catch (error) {
-        // Silenciado para evitar poluição no console
+        
       } finally {
         isScanning.current = false;
       }
@@ -75,11 +66,9 @@ export default function BookLoan() {
 
     const interval = setInterval(verificarSensor, 3000);
     return () => clearInterval(interval);
-  }, [isModalOpen]); // Adicionamos isModalOpen como dependência
+  }, [isModalOpen]); 
 
-  // ==========================================
   // LÓGICA DE GRAVAÇÃO (MODAL)
-  // ==========================================
   const iniciarFinalizacao = () => {
     if (livrosLidos.length === 0) {
       alert("Adicione pelo menos um livro à lista primeiro!");
@@ -96,8 +85,8 @@ export default function BookLoan() {
 
     const livro = livrosLidos[livroAtualIndex];
     
-    // Substitui os 4 primeiros caracteres por "0000" para liberar na catraca
-    // Exemplo: "B1B100000000000000000000" vira "000000000000000000000000"
+    // Troca 4 primeiros caracteres para "0000" liberar na catraca
+    // "B1B100000000000000000000" -> "000000000000000000000000"
     const novoEpc = "0000" + livro.id.substring(4);
 
     try {
@@ -116,7 +105,7 @@ export default function BookLoan() {
             setMensagemModal("");
           } else {
             setMensagemModal("Todos os livros foram liberados! Pode passar pela catraca.");
-            // Opcional: Limpar a lista após 3 segundos e fechar o modal
+            //Limpar lista após 3 segundos e fechar modal
             setTimeout(() => {
               setLivrosLidos([]);
               setIsModalOpen(false);
@@ -164,9 +153,6 @@ export default function BookLoan() {
       </main>
       <Footer />
 
-      {/* ==========================================
-          MODAL DE GRAVAÇÃO (SOBREPOSIÇÃO)
-          ========================================== */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center">
@@ -206,7 +192,6 @@ export default function BookLoan() {
               </>
             ) : (
               <>
-                {/* TELA DE SUCESSO FINAL */}
                 <div className="text-green-500 mb-4">
                   <svg className="w-20 h-20 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
