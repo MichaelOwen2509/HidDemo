@@ -37,6 +37,9 @@ export default function BookLoan() {
       try {
         const response = await fetch("http://localhost:5000/api/totem/ler");
         const data = await response.json();
+        
+        // VAI IMPRIMIR A RESPOSTA DA API NO CONSOLE
+        console.log("Resposta da API:", data);
 
         if (data.status === "sucesso" && data.epc) {
           const epcLido = data.epc;
@@ -58,7 +61,8 @@ export default function BookLoan() {
           });
         }
       } catch (error) {
-        
+        // AGORA SIM ELE VAI GRITAR SE DER ERRO!
+        console.error("ERRO NO FETCH:", error);
       } finally {
         isScanning.current = false;
       }
