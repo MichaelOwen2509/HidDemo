@@ -21,26 +21,21 @@ CAMINHO_RF_TOOL = os.path.join(DIRETORIO_ATUAL, "..", "Hardware", "src", "rf_too
 @app.get("/api/totem/ler")
 def ler_livro_totem():
     try:
-        #comando = ["box64",CAMINHO_RF_TOOL, "--ler"]
         comando = [CAMINHO_RF_TOOL, "--ler"]
         resultado = subprocess.run(comando, capture_output=True, text=True)
         
         texto_saida = resultado.stdout.strip()
-        
         inicio_json = texto_saida.find('{')
         
         if inicio_json != -1:
             texto_limpo = texto_saida[inicio_json:]
             dados = json.loads(texto_limpo)
-            
-            if dados.get("status") == "erro":
-                raise HTTPException(status_code=400, detail=dados.get("mensagem"))
             return dados
         else:
-            raise HTTPException(status_code=500, detail="Hardware não retornou um JSON válido.")
+            return {"status": "erro", "mensagem": "Leitor ocupado ou sem leitura."}
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+        return {"status": "erro", "mensagem": f"Erro interno do servidor: {str(e)}"}
 
 @app.post("/api/totem/gravar/{novo_epc}")
 def gravar_livro_totem(novo_epc: str):
@@ -69,7 +64,7 @@ def gravar_livro_totem(novo_epc: str):
 # ROTA MONITORAMENTO CATRACA
 @app.post("/porta_saida")
 async def receber_leitura_porta(request: Request):
-    # 1. A ARMADILHA: Lê o corpo da requisição exatamente como a antena enviou
+    # 1. Corpo da requisição antena enviou
     corpo_cru = await request.body()
     
     print("\n" + "="*40)
@@ -79,7 +74,7 @@ async def receber_leitura_porta(request: Request):
     print(f"Corpo da Mensagem:\n{corpo_cru.decode('utf-8', errors='ignore')}")
     print("="*40 + "\n")
 
-    # 2. Tenta processar o JSON (como estava antes)
+    # 2. Le JSON
     try:
         dados = await request.json()
         if dados:
@@ -92,6 +87,5 @@ async def receber_leitura_porta(request: Request):
                 
         return {"status": "recebido"}
     except Exception as e:
-        # Não levanta o erro 400 agora para não derrubar a antena, apenas avisa no terminal
         print(f"[ERRO] Falha ao ler como JSON: {e}")
         return {"status": "erro", "msg": "Formato desconhecido recebido"}
