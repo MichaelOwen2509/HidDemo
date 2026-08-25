@@ -21,6 +21,7 @@ CAMINHO_RF_TOOL = os.path.join(DIRETORIO_ATUAL, "..", "Hardware", "src", "rf_too
 @app.get("/api/totem/ler")
 def ler_livro_totem():
     try:
+        #comando = ["box64",CAMINHO_RF_TOOL, "--ler"]
         comando = [CAMINHO_RF_TOOL, "--ler"]
         resultado = subprocess.run(comando, capture_output=True, text=True)
         
@@ -44,6 +45,7 @@ def ler_livro_totem():
 @app.post("/api/totem/gravar/{novo_epc}")
 def gravar_livro_totem(novo_epc: str):
     try:
+        #comando = ["box64", CAMINHO_RF_TOOL, "--gravar", novo_epc]
         comando = [CAMINHO_RF_TOOL, "--gravar", novo_epc]
         resultado = subprocess.run(comando, capture_output=True, text=True)
         
@@ -67,20 +69,29 @@ def gravar_livro_totem(novo_epc: str):
 # ROTA MONITORAMENTO CATRACA
 @app.post("/porta_saida")
 async def receber_leitura_porta(request: Request):
+    # 1. A ARMADILHA: Lê o corpo da requisição exatamente como a antena enviou
+    corpo_cru = await request.body()
+    
+    print("\n" + "="*40)
+    print(" DADOS BRUTOS RECEBIDOS DA ANTENA")
+    print("="*40)
+    print(f"Formato (Content-Type): {request.headers.get('content-type')}")
+    print(f"Corpo da Mensagem:\n{corpo_cru.decode('utf-8', errors='ignore')}")
+    print("="*40 + "\n")
+
+    # 2. Tenta processar o JSON (como estava antes)
     try:
         dados = await request.json()
         if dados:
             for leitura in dados:
                 epc = leitura.get("reading_epc_hex")
-                print(f"\n[CATRACA] ALERTA: Livro IRREGULAR detectado na porta! EPC: {epc}")
+                if epc:
+                    print(f"[CATRACA] ALERTA: Livro IRREGULAR detectado na porta! EPC: {epc}")
+                else:
+                    print("[AVISO] O JSON é válido, mas a chave 'reading_epc_hex' não existe dentro dele.")
                 
         return {"status": "recebido"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Formato JSON inválido")
-
-if __name__ == '__main__':
-    import uvicorn
-    print("="*50)
-    print(" INICIANDO API DO TOTEM E MONITORAMENTO DA CATRACA ")
-    print("="*50)
-    uvicorn.run(app, host='0.0.0.0', port=5000)
+        # Não levanta o erro 400 agora para não derrubar a antena, apenas avisa no terminal
+        print(f"[ERRO] Falha ao ler como JSON: {e}")
+        return {"status": "erro", "msg": "Formato desconhecido recebido"}

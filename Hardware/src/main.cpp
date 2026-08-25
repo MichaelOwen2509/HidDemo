@@ -9,8 +9,6 @@
 
 using namespace std;
 
-//g++ main.cpp ../libCFHidApi.a -o rf_tool -I.. -lusb-1.0  
-
 const int TAMANHO_MAX_EPC = 24;
 const int TAMANHO_ARRAY_DADOS = 12;
 const int TAMANHO_BLOCO_LEITURA = 6;
@@ -94,13 +92,17 @@ int main(int argc, char* argv[]) {
             string tidHex = bytesToHexString(TIDData);
             string epcHex = bytesToHexString(EPCData);
             
-            // JSON sucesso
-            cout << "{\"status\": \"sucesso\", \"tid\": \"" << tidHex << "\", \"epc\": \"" << epcHex << "\"}" << endl;
+            //Filtra se começa com b1b100
+            if (epcHex.substr(0, 6) == "B1B100") {
+                cout << "{\"status\": \"sucesso\", \"tid\": \"" << tidHex << "\", \"epc\": \"" << epcHex << "\"}" << endl;
+            } else {
+                cout << "{\"status\": \"erro\", \"mensagem\": \"Tag bloqueada pela mascara (Nao comeca com B1B100).\"}" << endl;
+            }
         } else {
-            // JSON erro
+            // Nenhuma tag encontrada fisicamente
             cout << "{\"status\": \"erro\", \"mensagem\": \"Nenhuma tag detectada no sensor.\"}" << endl;
         }
-    } 
+    }
     
     // COMANDO DE GRAVAÇÃO
     else if (comando == "--gravar") {
