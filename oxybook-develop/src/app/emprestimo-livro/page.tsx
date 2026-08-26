@@ -29,48 +29,63 @@ export default function BookLoan() {
   };
 
   useEffect(() => {
-    const verificarSensor = async () => {
-      // Se o modal de gravação estiver aberto, pausa a leitura automática
-      if (isScanning.current || isModalOpen) return;
-      isScanning.current = true;
+    console.log("Conectando ao leitor RFID via WebSocket...");
+    
+    // ATENÇÃO PARA TESTES EM REDE:
+    // Se o seu Python está rodando no Linux e você está acessando a tela pelo Linux, localhost funciona perfeito.
+    // Se estiver testando de outro aparelho, mude localhost para o IP de onde o Python está rodando (ex: 192.168.85.119).
+    const socket = new WebSocket("ws://10.243.168.47:5000/ws/totem");
 
-      try {
-        const response = await fetch("http://192.168.85.119:5000/api/totem/ler");
-        const data = await response.json();
+    socket.onopen = () => {
+      console.log("Conexão WebSocket estabelecida com sucesso!");
+    };
+
+    socket.onmessage = (evento) => {
+      const data = JSON.parse(evento.data);
+      console.log("Leitura instantânea recebida:", data);
+
+      // Se leu um livro válido e com a máscara B1B100
+      if (data.status === "sucesso" && data.epc) {
         
-        // VAI IMPRIMIR A RESPOSTA DA API NO CONSOLE
-        console.log("Resposta da API:", data);
+        // 1. Busca o nome do livro no seu banco falso
+        const tituloDoLivro = mockBancoDeLivros[data.epc];
 
-        if (data.status === "sucesso" && data.epc) {
-          const epcLido = data.epc;
+        if (tituloDoLivro) {
+          // 2. Adiciona o livro na tela
+          setLivrosLidos((listaAnterior) => {
+            // Verifica se o livro já foi bipado para não duplicar na tela
+            const livroJaEstaNaLista = listaAnterior.some((livro) => livro.id === data.epc);
+            
+            if (livroJaEstaNaLista) {
+              return listaAnterior; // Se já existe, não faz nada
+            }
 
-          setLivrosLidos((listaAtual) => {
-            if (listaAtual.find((b) => b.id === epcLido)) return listaAtual;
-
-            const nomeDoLivro = mockBancoDeLivros[epcLido] || "Livro Desconhecido";
-
-            const novoLivro: Book = {
-              id: epcLido,
-              title: nomeDoLivro,
-              author: "Autor de Teste",
-              description: `EPC: ${epcLido}`,
-              coverUrl: "/image/capa-livro.png",
+            // Se é novo, cria o objeto do livro e adiciona no final da lista
+            const novoLivro = {
+              id: data.epc,
+              title: tituloDoLivro,
+              author: "Autor Desconhecido", // Dado provisório até ter o banco real
+              coverUrl: "https://via.placeholder.com/150", // Imagem genérica
+              description: "Descrição indisponível no momento", // <--- ADICIONE ESTA LINHA
             };
 
-            return [...listaAtual, novoLivro];
+            return [...listaAnterior, novoLivro];
           });
+        } else {
+          console.warn("Livro não encontrado no banco de dados:", data.epc);
         }
-      } catch (error) {
-        // AGORA SIM ELE VAI GRITAR SE DER ERRO!
-        console.error("ERRO NO FETCH:", error);
-      } finally {
-        isScanning.current = false;
       }
     };
 
-    const interval = setInterval(verificarSensor, 500);
-    return () => clearInterval(interval);
-  }, [isModalOpen]); 
+    socket.onerror = (erro) => {
+      console.error("Erro no WebSocket:", erro);
+    };
+
+    // Desconecta se o usuário sair da página
+    return () => {
+      socket.close();
+    };
+  }, []);
 
   // LÓGICA DE GRAVAÇÃO (MODAL)
   const iniciarFinalizacao = () => {
@@ -94,6 +109,7 @@ export default function BookLoan() {
     const novoEpc = "0000" + livro.id.substring(4);
 
     try {
+      // Nota: Ajuste este IP se for rodar localmente no totem definitivo (usar localhost)
       const response = await fetch(`http://192.168.85.119:5000/api/totem/gravar/${novoEpc}`, {
         method: 'POST'
       });
