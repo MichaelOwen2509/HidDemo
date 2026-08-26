@@ -11,7 +11,7 @@ const mockBancoDeLivros: Record<string, string> = {
   "B1B100000000009876543210": "O Senhor dos Anéis",
   "B1B100000000000000000011": "Introdução ao Linux",
   "E280116020006094374909C1": "Fundamentos de Redes",
-  "B1B100000000000000000000": "Dom Quixote",
+  "B1B100000000000000000000": "Dom Quixote", 
   "ABC000000000000000000001": "Programação em C++"
 };
 
