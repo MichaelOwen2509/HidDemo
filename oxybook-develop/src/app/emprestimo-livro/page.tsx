@@ -35,7 +35,7 @@ export default function BookLoan() {
       isScanning.current = true;
 
       try {
-        const response = await fetch("http://localhost:5000/api/totem/ler");
+        const response = await fetch("http://192.168.85.119:5000/api/totem/ler");
         const data = await response.json();
         
         // VAI IMPRIMIR A RESPOSTA DA API NO CONSOLE
@@ -68,7 +68,7 @@ export default function BookLoan() {
       }
     };
 
-    const interval = setInterval(verificarSensor, 3000);
+    const interval = setInterval(verificarSensor, 500);
     return () => clearInterval(interval);
   }, [isModalOpen]); 
 
@@ -94,7 +94,7 @@ export default function BookLoan() {
     const novoEpc = "0000" + livro.id.substring(4);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/totem/gravar/${novoEpc}`, {
+      const response = await fetch(`http://192.168.85.119:5000/api/totem/gravar/${novoEpc}`, {
         method: 'POST'
       });
       const data = await response.json();
