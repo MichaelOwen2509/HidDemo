@@ -104,6 +104,32 @@ int main(int argc, char* argv[]) {
         }
     }
     
+    // COMANDO DE ESCUTA CONTÍNUA (WEBSOCKET)
+    else if (comando == "--escutar") {
+        string ultimaTagLida = "";
+        
+        while (true) {
+            unsigned char EPCData[TAMANHO_ARRAY_DADOS] = {0};
+            
+            // Tenta ler a tag sem usar o console a menos que ache algo novo
+            if (lerMemoriaDaTag(1, 2, EPCData)) {
+                string epcHex = bytesToHexString(EPCData);
+                
+                // Só imprime se a tag tiver a máscara e for diferente da última lida
+                if (epcHex.substr(0, 6) == "B1B100" && epcHex != ultimaTagLida) {
+                    cout << "{\"status\": \"sucesso\", \"epc\": \"" << epcHex << "\"}" << endl;
+                    ultimaTagLida = epcHex; // Memoriza para não repetir
+                }
+            } else {
+                // Se não leu nada, limpa a memória (o livro foi retirado)
+                ultimaTagLida = ""; 
+            }
+            
+            // Pausa minúscula de 50ms para não fritar o processador do Raspberry Pi
+            usleep(50000); 
+        }
+    }
+
     // COMANDO DE GRAVAÇÃO
     else if (comando == "--gravar") {
         if (argc < 3) {
