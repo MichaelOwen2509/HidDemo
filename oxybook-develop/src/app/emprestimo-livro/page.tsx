@@ -23,62 +23,61 @@ export default function BookLoan() {
   const [livroAtualIndex, setLivroAtualIndex] = useState(0);
   const [gravando, setGravando] = useState(false);
   const [mensagemModal, setMensagemModal] = useState("");
+  
+  // NOVO: Estado para o painel de debug na tela do totem
+  const [debugMsg, setDebugMsg] = useState("Procurando WebSocket...");
 
   const removerLivro = (id: string) => {
     setLivrosLidos((prev) => prev.filter((book) => book.id !== id));
   };
 
   useEffect(() => {
-    console.log("Conectando ao leitor RFID via WebSocket...");
-    
-    // ATENÇÃO PARA TESTES EM REDE:
-    // Se o seu Python está rodando no Linux e você está acessando a tela pelo Linux, localhost funciona perfeito.
-    // Se estiver testando de outro aparelho, mude localhost para o IP de onde o Python está rodando (ex: 192.168.85.119).
-    const socket = new WebSocket("ws://10.243.168.47:5000/ws/totem");
+    // Endereço IP fixo do seu Raspberry Pi na rede
+    const socket = new WebSocket("ws://192.168.81.248:5000/ws/totem");
 
     socket.onopen = () => {
-      console.log("Conexão WebSocket estabelecida com sucesso!");
+      setDebugMsg("🟢 CONECTADO! WebSocket aberto.");
     };
 
     socket.onmessage = (evento) => {
+      setDebugMsg(`📖 LEITURA: ${evento.data}`); // Imprime o JSON na tela do totem
       const data = JSON.parse(evento.data);
-      console.log("Leitura instantânea recebida:", data);
 
       // Se leu um livro válido e com a máscara B1B100
       if (data.status === "sucesso" && data.epc) {
         
-        // 1. Busca o nome do livro no seu banco falso
-        const tituloDoLivro = mockBancoDeLivros[data.epc];
+        // 1. Busca o nome do livro no banco falso ou usa "Livro Desconhecido"
+        const tituloDoLivro = mockBancoDeLivros[data.epc] || "Livro Desconhecido";
 
-        if (tituloDoLivro) {
-          // 2. Adiciona o livro na tela
-          setLivrosLidos((listaAnterior) => {
-            // Verifica se o livro já foi bipado para não duplicar na tela
-            const livroJaEstaNaLista = listaAnterior.some((livro) => livro.id === data.epc);
-            
-            if (livroJaEstaNaLista) {
-              return listaAnterior; // Se já existe, não faz nada
-            }
+        // 2. Adiciona o livro na tela (seja ele conhecido ou não)
+        setLivrosLidos((listaAnterior) => {
+          // Verifica se o livro já foi bipado para não duplicar na tela
+          const livroJaEstaNaLista = listaAnterior.some((livro) => livro.id === data.epc);
+          
+          if (livroJaEstaNaLista) {
+            return listaAnterior; // Se já existe, não faz nada
+          }
 
-            // Se é novo, cria o objeto do livro e adiciona no final da lista
-            const novoLivro = {
-              id: data.epc,
-              title: tituloDoLivro,
-              author: "Autor Desconhecido", // Dado provisório até ter o banco real
-              coverUrl: "https://via.placeholder.com/150", // Imagem genérica
-              description: "Descrição indisponível no momento", // <--- ADICIONE ESTA LINHA
-            };
+          // Se é novo, cria o objeto do livro e adiciona no final da lista
+          const novoLivro = {
+            id: data.epc,
+            title: tituloDoLivro,
+            author: "Autor Desconhecido", // Dado provisório até ter o banco real
+            coverUrl: "https://via.placeholder.com/150", // Imagem genérica
+            description: tituloDoLivro === "Livro Desconhecido" ? "Livro não cadastrado no sistema." : "Descrição indisponível no momento",
+          };
 
-            return [...listaAnterior, novoLivro];
-          });
-        } else {
-          console.warn("Livro não encontrado no banco de dados:", data.epc);
-        }
+          return [...listaAnterior, novoLivro];
+        });
       }
     };
 
     socket.onerror = (erro) => {
-      console.error("Erro no WebSocket:", erro);
+      setDebugMsg("🔴 ERRO: Conexão recusada. O Python está rodando no IP correto?");
+    };
+
+    socket.onclose = () => {
+      setDebugMsg("⚪ AVISO: Conexão WebSocket fechada.");
     };
 
     // Desconecta se o usuário sair da página
@@ -105,12 +104,10 @@ export default function BookLoan() {
     const livro = livrosLidos[livroAtualIndex];
     
     // Troca 4 primeiros caracteres para "0000" liberar na catraca
-    // "B1B100000000000000000000" -> "000000000000000000000000"
     const novoEpc = "0000" + livro.id.substring(4);
 
     try {
-      // Nota: Ajuste este IP se for rodar localmente no totem definitivo (usar localhost)
-      const response = await fetch(`http://192.168.85.119:5000/api/totem/gravar/${novoEpc}`, {
+      const response = await fetch(`http://192.168.81.248:5000/api/totem/gravar/${novoEpc}`, {
         method: 'POST'
       });
       const data = await response.json();
@@ -224,6 +221,11 @@ export default function BookLoan() {
           </div>
         </div>
       )}
+
+      {/* PAINEL DE DEBUG NA TELA */}
+      <div className="fixed bottom-0 left-0 w-full bg-gray-900 text-green-400 p-2 text-xs font-mono z-[9999]">
+        DEBUG: {debugMsg}
+      </div>
     </div>
   );
 }
