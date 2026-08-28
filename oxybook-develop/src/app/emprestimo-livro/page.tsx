@@ -9,10 +9,10 @@ import { Book } from "@/types/book";
 
 const mockBancoDeLivros: Record<string, string> = {
   "B1B100000000009876543210": "O Senhor dos Anéis",
-  "B1B100000000000000000011": "Introdução ao Linux",
-  "E280116020006094374909C1": "Fundamentos de Redes",
+  "B1B100000000008876543210": "Introdução ao Linux",
+  "B1B1006020006094374909C1": "Fundamentos de Redes",
   "B1B100000000000000000000": "Dom Quixote", 
-  "ABC000000000000000000001": "Programação em C++"
+  "B1B100000000000000000001": "Programação em C++"
 };
 
 export default function BookLoan() {
@@ -32,57 +32,64 @@ export default function BookLoan() {
   };
 
   useEffect(() => {
-    // Endereço IP fixo do seu Raspberry Pi na rede
-    const socket = new WebSocket("ws://192.168.81.248:5000/ws/totem");
+    // 1. Tipamos as variáveis para o TypeScript ficar feliz
+    let socket: WebSocket;
+    let tentarReconectar = true; 
+    let timeoutId: NodeJS.Timeout; // Se o TS ainda reclamar dessa, troque por: let timeoutId: ReturnType<typeof setTimeout>;
 
-    socket.onopen = () => {
-      setDebugMsg("🟢 CONECTADO! WebSocket aberto.");
+    const conectarWebSocket = () => {
+      socket = new WebSocket("ws://192.168.82.16:5000/ws/totem");
+
+      socket.onopen = () => {
+        setDebugMsg("🟢 CONECTADO! WebSocket aberto.");
+      };
+
+      socket.onmessage = (evento) => {
+        setDebugMsg(`📖 LEITURA: ${evento.data}`); 
+        const data = JSON.parse(evento.data);
+
+        if (data.status === "sucesso" && data.epc) {
+          const tituloDoLivro = mockBancoDeLivros[data.epc] || "Livro Desconhecido";
+
+          setLivrosLidos((listaAnterior) => {
+            const livroJaEstaNaLista = listaAnterior.some((livro) => livro.id === data.epc);
+            
+            if (livroJaEstaNaLista) {
+              return listaAnterior; 
+            }
+
+            const novoLivro = {
+              id: data.epc,
+              title: tituloDoLivro,
+              author: "Autor Desconhecido", 
+              coverUrl: "https://via.placeholder.com/150", 
+              description: tituloDoLivro === "Livro Desconhecido" ? "Livro não cadastrado no sistema." : "Descrição indisponível no momento",
+            };
+
+            return [...listaAnterior, novoLivro];
+          });
+        }
+      };
+
+      socket.onerror = (erro) => {
+        setDebugMsg("🔴 ERRO: Falha no WebSocket. Tentando reconectar...");
+        socket.close(); 
+      };
+
+      socket.onclose = () => {
+        setDebugMsg("⚪ AVISO: Conexão fechada. Tentando de novo em 3 segundos...");
+        if (tentarReconectar) {
+          timeoutId = setTimeout(conectarWebSocket, 3000);
+        }
+      };
     };
 
-    socket.onmessage = (evento) => {
-      setDebugMsg(`📖 LEITURA: ${evento.data}`); // Imprime o JSON na tela do totem
-      const data = JSON.parse(evento.data);
+    conectarWebSocket();
 
-      // Se leu um livro válido e com a máscara B1B100
-      if (data.status === "sucesso" && data.epc) {
-        
-        // 1. Busca o nome do livro no banco falso ou usa "Livro Desconhecido"
-        const tituloDoLivro = mockBancoDeLivros[data.epc] || "Livro Desconhecido";
-
-        // 2. Adiciona o livro na tela (seja ele conhecido ou não)
-        setLivrosLidos((listaAnterior) => {
-          // Verifica se o livro já foi bipado para não duplicar na tela
-          const livroJaEstaNaLista = listaAnterior.some((livro) => livro.id === data.epc);
-          
-          if (livroJaEstaNaLista) {
-            return listaAnterior; // Se já existe, não faz nada
-          }
-
-          // Se é novo, cria o objeto do livro e adiciona no final da lista
-          const novoLivro = {
-            id: data.epc,
-            title: tituloDoLivro,
-            author: "Autor Desconhecido", // Dado provisório até ter o banco real
-            coverUrl: "https://via.placeholder.com/150", // Imagem genérica
-            description: tituloDoLivro === "Livro Desconhecido" ? "Livro não cadastrado no sistema." : "Descrição indisponível no momento",
-          };
-
-          return [...listaAnterior, novoLivro];
-        });
-      }
-    };
-
-    socket.onerror = (erro) => {
-      setDebugMsg("🔴 ERRO: Conexão recusada. O Python está rodando no IP correto?");
-    };
-
-    socket.onclose = () => {
-      setDebugMsg("⚪ AVISO: Conexão WebSocket fechada.");
-    };
-
-    // Desconecta se o usuário sair da página
     return () => {
-      socket.close();
+      tentarReconectar = false; 
+      clearTimeout(timeoutId);
+      if (socket) socket.close();
     };
   }, []);
 
@@ -107,7 +114,7 @@ export default function BookLoan() {
     const novoEpc = "0000" + livro.id.substring(4);
 
     try {
-      const response = await fetch(`http://192.168.81.248:5000/api/totem/gravar/${novoEpc}`, {
+      const response = await fetch(`http://192.168.82.16:5000/api/totem/gravar/${novoEpc}`, {
         method: 'POST'
       });
       const data = await response.json();
