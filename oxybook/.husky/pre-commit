@@ -1,0 +1,1 @@
+pnpm format && pnpm typecheck && pnpm test && echo 'Testes concluídos! 🫡' && echo '🙂 Partiu push...'

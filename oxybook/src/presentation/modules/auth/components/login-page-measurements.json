@@ -1,0 +1,135 @@
+{
+	"screen": {
+		"height": {
+			"value": "100vh",
+			"tailwindClass": "h-screen"
+		},
+		"overflow": {
+			"value": "hidden",
+			"tailwindClass": "overflow-hidden"
+		},
+		"backgroundColor": {
+			"value": "#f2f0eb",
+			"tailwindClass": "bg-[#f2f0eb]"
+		}
+	},
+	"containers": {
+		"headerInner": {
+			"maxWidthPx": 1152,
+			"horizontalPaddingPx": 24,
+			"tailwindClasses": ["max-w-6xl", "px-6"]
+		},
+		"mainInner": {
+			"maxWidthPx": 1152,
+			"horizontalPaddingPx": 24,
+			"gapPx": 64,
+			"tailwindClasses": ["max-w-6xl", "px-6", "gap-16"]
+		},
+		"footerInner": {
+			"maxWidthPx": 1152,
+			"horizontalPaddingPx": 24,
+			"tailwindClasses": ["max-w-6xl", "px-6"]
+		}
+	},
+	"header": {
+		"verticalPaddingPx": 32,
+		"ceumaLogoHeightPx": 36,
+		"divider": {
+			"widthPx": 1,
+			"heightPx": 24
+		},
+		"oxygeniLogoHeightPx": 24,
+		"tailwindClasses": ["py-8", "h-9", "w-px", "h-6"]
+	},
+	"main": {
+		"bottomPaddingPx": 16,
+		"tailwindClass": "pb-4"
+	},
+	"form": {
+		"desktopWidthPx": 620,
+		"verticalGapPx": 24,
+		"tailwindClasses": ["lg:w-155", "gap-6"],
+		"iconBadge": {
+			"outerSizePx": 120,
+			"innerSizePx": 80,
+			"iconSizePx": 40,
+			"tailwindClasses": ["w-30", "h-30", "w-20", "h-20"]
+		},
+		"title": {
+			"fontSizePx": 24,
+			"tailwindClass": "text-2xl"
+		},
+		"subtitle": {
+			"fontSizePx": 14,
+			"tailwindClass": "text-sm"
+		},
+		"fields": {
+			"inputHeightPx": 44,
+			"inputHorizontalPaddingPx": 12,
+			"inputRightPaddingWithIconPx": 40,
+			"borderRadiusPx": 6,
+			"labelFontSizePx": 14,
+			"errorFontSizePx": 12,
+			"tailwindClasses": [
+				"h-11",
+				"px-3",
+				"pr-10",
+				"rounded-md",
+				"text-sm",
+				"text-xs"
+			]
+		},
+		"submitButton": {
+			"heightPx": 44,
+			"borderRadiusPx": 6,
+			"fontSizePx": 14,
+			"backgroundColor": "#4E0000",
+			"hoverBackgroundColor": "#7a1728",
+			"tailwindClasses": [
+				"h-11",
+				"rounded-md",
+				"text-sm",
+				"bg-[#4E0000]",
+				"hover:bg-[#7a1728]"
+			]
+		},
+		"supportText": {
+			"fontSizePx": 12,
+			"tailwindClass": "text-xs"
+		},
+		"lgpdText": {
+			"fontSizePx": 12,
+			"tailwindClass": "text-xs"
+		}
+	},
+	"sideImage": {
+		"visibility": "hidden below lg breakpoint",
+		"container": {
+			"maxWidthPx": 678,
+			"height": "calc(100vh - 100px)",
+			"maxHeightPx": 896,
+			"borderRadiusPx": 24,
+			"backgroundColor": "#e8e4dd",
+			"verticalPaddingPx": 24,
+			"tailwindClasses": [
+				"max-w-169.5",
+				"h-[calc(100vh-100px)]",
+				"max-h-224",
+				"rounded-3xl",
+				"py-6"
+			]
+		},
+		"innerImageInsetPx": 20,
+		"innerImageBorderRadiusPx": 12,
+		"footerLogo": {
+			"heightPx": 40,
+			"bottomOffsetPx": 48,
+			"tailwindClasses": ["h-10", "bottom-12"]
+		}
+	},
+	"footer": {
+		"verticalPaddingPx": 32,
+		"textFontSizePx": 12,
+		"tailwindClasses": ["py-8", "text-xs"]
+	}
+}
