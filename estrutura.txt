@@ -1,0 +1,122 @@
+.
+├── API
+│   ├── api.py
+│   ├── __pycache__
+│   │   └── api.cpython-312.pyc
+│   └── requirements.txt
+├── estrutura.txt
+├── Hardware
+│   ├── bin
+│   │   └── Debug
+│   │       └── HidDemo
+│   ├── CFHidApi.h
+│   ├── CodeBlocks.txt
+│   ├── hidapi.h
+│   ├── HidDemo.cbp
+│   ├── HidDemo.layout
+│   ├── HidDemo.run
+│   ├── HidPic.png
+│   ├── libCFHidApi.a
+│   ├── libusb-1.0.a
+│   ├── libusb-1.0.la
+│   ├── libusb-1.0.so
+│   ├── libusb-1.0.so.0
+│   ├── libusb-1.0.so.0.1.0
+│   ├── libusb.h
+│   ├── main
+│   ├── main.cpp
+│   ├── pkgconfig
+│   │   └── libusb-1.0.pc
+│   └── src
+│       ├── comandos.md
+│       ├── main
+│       ├── main.cpp
+│       └── rf_tool
+└── oxybook-develop
+    ├── AGENTS.md
+    ├── CLAUDE.md
+    ├── eslint.config.mjs
+    ├── estrutura.txt
+    ├── next.config.ts
+    ├── package.json
+    ├── package-lock.json
+    ├── pnpm-lock.yaml
+    ├── postcss.config.mjs
+    ├── publi
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+DIRETORIO_ATUAL = os.c
+    │   ├── icons
+    │   │   ├── icon-insta.svg
+    │   │   ├── icon-linkedin.svg
+    │   │   ├── icon-wpp.svg
+    │   │   ├── icon-x.svg
+    │   │   └── logo-ceuma.svg
+    │   ├── image
+    │   │   ├── capa-livro.png
+    │   │   ├── icons
+    │   │   │   ├── logo-ceuma-branco.svg
+    │   │   │   ├── logo-ceuma.svg
+    │   │   │   ├── logo-oxygeni.svg
+    │   │   │   └── vector.svg
+    │   │   └── student-photo.png
+    │   └── svg
+    │       └── logo-ceuma.svg
+    ├── README.md
+    ├── src
+    │   ├── app
+    │   │   ├── (auth)
+    │   │   │   └── login
+    │   │   │       └── page.tsx
+    │   │   ├── emprestimo-livro
+    │   │   │   └── page.tsx
+    │   │   ├── globals.css
+    │   │   ├── layout.tsx
+    │   │   ├── page.test.tsx
+    │   │   ├── page.tsx
+    │   │   └── perfil
+    │   │       └── page.tsx
+    │   ├── presentation
+    │   │   ├── modules
+    │   │   │   ├── auth
+    │   │   │   │   └── components
+    │   │   │   │       └── login-page.tsx
+    │   │   │   ├── books
+    │   │   │   │   └── components
+    │   │   │   │       └── rules-and-policies
+    │   │   │   │           ├── index.ts
+    │   │   │   │           ├── rule-item.tsx
+    │   │   │   │           └── rules-and-polices.tsx
+    │   │   │   └── perfil
+    │   │   │       └── components
+    │   │   │           ├── account-status.tsx
+    │   │   │           ├── loan-alert.tsx
+    │   │   │           ├── pending-fines.tsx
+    │   │   │           ├── profile-aside.tsx
+    │   │   │           └── user-profile-header.tsx
+    │   │   └── shared
+    │   │       ├── components
+    │   │       │   ├── header
+    │   │       │   │   ├── header.tsx
+    │   │       │   │   └── index.ts
+    │   │       │   ├── layout
+    │   │       │   │   └── footer
+    │   │       │   │       └── footer.tsx
+    │   │       │   └── livros
+    │   │       │       ├── BookCard.tsx
+    │   │       │       └── SelectedBooksList.tsx
+    │   │       ├── libs.test.ts
+    │   │       ├── utils.test.ts
+    │   │       └── utils.ts
+    │   └── types
+    │       └── book.ts
+    ├── tsconfig.json
+    ├── vitest.config.mts
+    └── vitest.setup.ts
+
+36 directories, 76 files
