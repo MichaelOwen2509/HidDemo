@@ -4,7 +4,16 @@ import asyncio
 import json
 import os
 import subprocess
+import asyncio
+from evdev import InputDevice, categorize, ecodes, list_devices
+from leitor_codigo_barras import router as router_codigo_barras
 
+app = FastAPI()
+
+TECLAS = {
+    **{getattr(ecodes, f"KEY_{n}"): str(n) for n in range(10)},
+    **{getattr(ecodes, f"KEY_{c}"): c.lower() for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"},
+}
 
 
 
@@ -17,6 +26,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(router_codigo_barras)
 
 DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
 CAMINHO_RF_TOOL = os.path.join(
@@ -170,81 +180,57 @@ def gravar_livro_totem(novo_epc: str):
 # =============================================
 # 3. ROTA DE LEITURA CODIGO DE BARRAS DO TOTEM
 # =============================================
-@app.get("/api/totem/ler_codigo_barras/")
-def ler_codigo_barras_totem():
-    try:
-        # Leitores USB como o Bematech BR-310 emulam um teclado físico (Keyboard HID).
-        # O método record() vai escutar globalmente as teclas digitadas até o leitor enviar o 'Enter' (\n) no final do código.
-        eventos = keyboard.record(until='enter')
-        
-        # Converte a sequência de eventos (tecla pressionada/solta) em uma string legível
-        codigo_digitado = list(keyboard.get_typed_strings(eventos))
-        
-        if codigo_digitado and codigo_digitado[0]:
-            numero_livro = codigo_digitado[0].strip()
-            return {
-                "status": "sucesso",
-                "codigo_barras": numero_livro
-            }
-        else:
-            return {
-                "status": "erro",
-                "mensagem": "Leitura vazia ou interrompida."
-            }
-            
-    except Exception as erro:
-        return {
-            "status": "erro",
-            "mensagem": f"Falha ao acessar o leitor de código de barras: {erro}"
-        }
+# @app.get("/api/totem/ler_codigo_barras/")
+# def ler_codigo_barras_totem():
+
 
 
 # ==========================================
 # 4. ROTA DE MONITORAMENTO DA CATRACA
 # ==========================================
 
-@app.post("/porta_saida")
-async def receber_leitura_porta(request: Request):
-    corpo_cru = await request.body()
+# @app.post("/porta_saida")
+# async def receber_leitura_porta(request: Request):
+#     corpo_cru = await request.body()
 
-    print("\n" + "=" * 40)
-    print(" DADOS BRUTOS RECEBIDOS DA ANTENA")
-    print("=" * 40)
-    print(f"Formato (Content-Type): {request.headers.get('content-type')}")
-    print(
-        "Corpo da Mensagem:\n"
-        + corpo_cru.decode("utf-8", errors="ignore")
-    )
-    print("=" * 40 + "\n")
+#     print("\n" + "=" * 40)
+#     print(" DADOS BRUTOS RECEBIDOS DA ANTENA")
+#     print("=" * 40)
+#     print(f"Formato (Content-Type): {request.headers.get('content-type')}")
+#     print(
+#         "Corpo da Mensagem:\n"
+#         + corpo_cru.decode("utf-8", errors="ignore")
+#     )
+#     print("=" * 40 + "\n")
 
-    try:
-        dados = await request.json()
+#     try:
+#         dados = await request.json()
 
-        if isinstance(dados, dict):
-            dados = [dados]
+#         if isinstance(dados, dict):
+#             dados = [dados]
 
-        if isinstance(dados, list):
-            for leitura in dados:
-                if not isinstance(leitura, dict):
-                    continue
+#         if isinstance(dados, list):
+#             for leitura in dados:
+#                 if not isinstance(leitura, dict):
+#                     continue
 
-                epc = leitura.get("reading_epc_hex")
-                if epc:
-                    print(
-                        "[CATRACA] ALERTA: Livro IRREGULAR detectado "
-                        f"na porta! EPC: {epc}"
-                    )
-                else:
-                    print(
-                        "[AVISO] JSON válido, mas a chave "
-                        "'reading_epc_hex' não foi encontrada."
-                    )
+#                 epc = leitura.get("reading_epc_hex")
+#                 if epc:
+#                     print(
+#                         "[CATRACA] ALERTA: Livro IRREGULAR detectado "
+#                         f"na porta! EPC: {epc}"
+#                     )
+#                 else:
+#                     print(
+#                         "[AVISO] JSON válido, mas a chave "
+#                         "'reading_epc_hex' não foi encontrada."
+#                     )
 
-        return {"status": "recebido"}
+#         return {"status": "recebido"}
 
-    except Exception as erro:
-        print(f"[ERRO] Falha ao ler como JSON: {erro}")
-        return {
-            "status": "erro",
-            "msg": "Formato desconhecido recebido",
-        }
+#     except Exception as erro:
+#         print(f"[ERRO] Falha ao ler como JSON: {erro}")
+#         return {
+#             "status": "erro",
+#             "msg": "Formato desconhecido recebido",
+#         }

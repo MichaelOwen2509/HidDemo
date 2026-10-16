@@ -1,0 +1,13 @@
+Iniciar servidor
+
+uvicorn api:app --reload --host 0.0.0.0 --port 8000
+
+Criar venv linux
+
+python3 -m venv .venv   
+
+Ativar venv linux
+source .venv/bin/activate
+
+Para instalar todas as bibliotecas listadas em requirements.txt, execute:
+pip install -r requirements.txt   
