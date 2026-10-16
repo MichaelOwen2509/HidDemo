@@ -10,6 +10,10 @@ Só dígitos 0-9 são aceitos (linha superior ou teclado numérico); letras,
 símbolos e teclas com Shift/Ctrl/Alt são ignorados. BACKSPACE apaga o
 último dígito digitado.
 
+O número do livro tem exatamente 6 dígitos. Se o leitor mandar zeros a
+mais na frente (ex.: 00443033), eles são removidos (-> 443033). Qualquer
+outra coisa que não resulte em 6 dígitos é rejeitada com erro.
+
 Leitura nativa de /dev/input via struct + select: sem evdev e sem sudo em
 runtime. Basta o usuário estar no grupo 'input':
 
@@ -25,13 +29,14 @@ Variáveis de ambiente (todas opcionais):
     SCANNER_VID         VID do leitor em hexadecimal        (padrão: 040b)
     SCANNER_PID         PID do leitor em hexadecimal        (padrão: 6543)
     SCANNER_TIMEOUT     timeout padrão em segundos          (padrão: 30)
+    CODIGO_TAMANHO      quantidade de dígitos do número     (padrão: 6)
     SCANNER_DEVICE      caminho forçado, ex: /dev/input/event5
     TECLADO_EXCLUSIVO   "1" captura o teclado com exclusividade durante a
                         espera (os dígitos não aparecem em outras janelas,
                         mas o teclado fica "preso" até o ENTER ou o fim do
                         tempo). Padrão: 0
     MOCK_SCANNER        "1" para responder sem hardware
-    MOCK_CODIGO         código devolvido no modo mock
+    MOCK_CODIGO         código devolvido no modo mock (padrão: 443033)
 """
 
 import asyncio
@@ -60,6 +65,7 @@ SCANNER_VID = int(os.getenv("SCANNER_VID", "040b"), 16)
 SCANNER_PID = int(os.getenv("SCANNER_PID", "6543"), 16)
 SCANNER_TIMEOUT_PADRAO = float(os.getenv("SCANNER_TIMEOUT", "30"))
 TECLADO_EXCLUSIVO = os.getenv("TECLADO_EXCLUSIVO", "0") == "1"
+TAMANHO_CODIGO = int(os.getenv("CODIGO_TAMANHO", "6"))
 
 LEITOR_HID_DISPONIVEL = os.name == "posix" and os.path.isdir("/dev/input")
 
@@ -95,6 +101,31 @@ def _sucesso(codigo: str) -> dict:
     # "codigo_barras" (nome usado na rota antiga) e "codigo" (nome usado
     # em outras versões): assim qualquer front-end continua funcionando.
     return {"status": "sucesso", "codigo_barras": codigo, "codigo": codigo}
+
+
+def _normalizar_codigo(digitos: str) -> str | None:
+    """Devolve o número do livro com exatamente TAMANHO_CODIGO dígitos.
+
+    Remove zeros extras à esquerda (00443033 -> 443033), mas só zeros:
+    se sobrar qualquer outro dígito além do tamanho, o código é inválido.
+    Códigos curtos demais também são inválidos.
+    """
+    if len(digitos) > TAMANHO_CODIGO:
+        excesso = digitos[:-TAMANHO_CODIGO]
+        if excesso.strip("0"):
+            return None
+        digitos = digitos[-TAMANHO_CODIGO:]
+    return digitos if len(digitos) == TAMANHO_CODIGO else None
+
+
+def _erro_tamanho(digitos: str) -> dict:
+    return {
+        "status": "erro",
+        "mensagem": (
+            f"Código inválido: o número do livro deve ter "
+            f"{TAMANHO_CODIGO} dígitos (lido: {digitos})."
+        ),
+    }
 
 
 MSG_SEM_PERMISSAO = (
@@ -364,15 +395,18 @@ async def ler_codigo_barras_totem(
 ):
     # Modo mock via query string: /api/totem/ler_codigo_barras/?mock=123
     if mock is not None:
-        codigo_mock = "".join(c for c in mock if c in "0123456789")
-        if not codigo_mock:
+        digitos = "".join(c for c in mock if c in "0123456789")
+        if not digitos:
             return {"status": "erro", "mensagem": "Nenhum código lido."}
+        codigo_mock = _normalizar_codigo(digitos)
+        if not codigo_mock:
+            return _erro_tamanho(digitos)
         return _sucesso(codigo_mock)
 
     # Modo mock via variável de ambiente
     if os.getenv("MOCK_SCANNER", "0") == "1":
         await asyncio.sleep(0.5)
-        return _sucesso(os.getenv("MOCK_CODIGO", "9788535902777"))
+        return _sucesso(os.getenv("MOCK_CODIGO", "443033"))
 
     try:
         timeout = float(timeout)
@@ -435,4 +469,8 @@ async def ler_codigo_barras_totem(
                 "mensagem": "Tempo esgotado ao ler código de barras.",
             }
 
-        return _sucesso(codigo)
+        codigo_normalizado = _normalizar_codigo(codigo)
+        if not codigo_normalizado:
+            return _erro_tamanho(codigo)
+
+        return _sucesso(codigo_normalizado)

@@ -11,3 +11,9 @@ source .venv/bin/activate
 
 Para instalar todas as bibliotecas listadas em requirements.txt, execute:
 pip install -r requirements.txt   
+
+adicionar usuario no input 
+
+ sudo usermod -aG input pedro
+  
+  obs: usar sudo su e reiniciar 
