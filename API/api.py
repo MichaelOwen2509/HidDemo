@@ -6,6 +6,8 @@ import os
 import subprocess
 
 
+
+
 app = FastAPI()
 
 app.add_middleware(
@@ -164,8 +166,41 @@ def gravar_livro_totem(novo_epc: str):
         )
 
 
+
+# =============================================
+# 3. ROTA DE LEITURA CODIGO DE BARRAS DO TOTEM
+# =============================================
+@app.get("/api/totem/ler_codigo_barras/")
+def ler_codigo_barras_totem():
+    try:
+        # Leitores USB como o Bematech BR-310 emulam um teclado físico (Keyboard HID).
+        # O método record() vai escutar globalmente as teclas digitadas até o leitor enviar o 'Enter' (\n) no final do código.
+        eventos = keyboard.record(until='enter')
+        
+        # Converte a sequência de eventos (tecla pressionada/solta) em uma string legível
+        codigo_digitado = list(keyboard.get_typed_strings(eventos))
+        
+        if codigo_digitado and codigo_digitado[0]:
+            numero_livro = codigo_digitado[0].strip()
+            return {
+                "status": "sucesso",
+                "codigo_barras": numero_livro
+            }
+        else:
+            return {
+                "status": "erro",
+                "mensagem": "Leitura vazia ou interrompida."
+            }
+            
+    except Exception as erro:
+        return {
+            "status": "erro",
+            "mensagem": f"Falha ao acessar o leitor de código de barras: {erro}"
+        }
+
+
 # ==========================================
-# 3. ROTA DE MONITORAMENTO DA CATRACA
+# 4. ROTA DE MONITORAMENTO DA CATRACA
 # ==========================================
 
 @app.post("/porta_saida")
